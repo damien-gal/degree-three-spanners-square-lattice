@@ -1,90 +1,61 @@
-import sympy as s
-import numpy as np
+"""A NOTE ON OPTIMAL DEGREE-THREE SPANNERS OF THE SQUARE LATTICE - PROOF OF LEMMA 2.4
 
-import matplotlib
-matplotlib.use('qt5agg')
-import matplotlib.pyplot as plt
+Usage:
+    lemma_2_4.py
+    lemma_2_4.py (-h | --help)
 
-# Let p and q be points in Z^2 with 0 < |pq| < 64.
-# Without loss of generality, we will assume that p = (0, 0)
-# and q = (i, j) with 0 <= j <= i.
-# For every possible point q = (i, j), the program constructs a path between p = (0, 0) and q
-# consisting of segments of the following types:
-# * [euclidean length = 1] and [weight = 1 + sqrt(2)];
-# * [euclidean length = sqrt(2)] and [weight = 2 + sqrt(2)];
-# * [euclidean length = sqrt(5)] and [weight = 3 + sqrt(2)].
-# The program then checks that the weighted length of the path is not more than (1+sqrt(2)) * |pq|.
+Options:
+    -h --help       Show this screen.
 
-# A drawing of the path is plotted when the optional 'figure' argument is True.
-# Some additional explanatory text is printed if 'details' is True.
-# The sympy library is used for symbolic computations of expressions involving square roots of integers.
+Explanation:
+    This program performs the verification mentioned in the proof of Lemma 2.4.
+"""
 
+from docopt import docopt
 
-def can_be_reached(pt, details, figure):
-    def next_point(pt):
-        '''
-        Given a point pt, returns the next point on the path from pt to (0, 0)
-        that is being constructed.
-        '''
-        x, y = pt
-        if y == 0:
-            if x <= 3:
-                return (x-1, y), 1+s.sqrt(2)
-            else:
-                return (x-2, y+1), 3+s.sqrt(2)
-        elif x == y:
-            if pt == (1, 1):
-                return (0, 0), 2+s.sqrt(2)
-            else:
-                return (x-1, y-2), 3+s.sqrt(2)
-        else:
-            return (x-2, y-1), 3+s.sqrt(2)
+from queue import PriorityQueue
 
-    x, y = pt
-    eucl_dist = s.sqrt(x**2+y**2)
+from util import *
 
-    list_points = [pt]
-    path_dist = 0
-    while pt != (0, 0):
-        pt, dist = next_point(pt)
-        list_points += [pt]
-        path_dist += dist
-    path_dil = s.simplify(path_dist/eucl_dist)
+if __name__ == '__main__':
+    arguments = docopt(__doc__)
+    
+    # Building the graph
+    nodes = [(i, j) for i in range(-10, 11) for j in range(-10, 11)]
 
-    successful = path_dil <= 1+s.sqrt(2)
+    graph = {}
+    for p in nodes:
+        graph[p] = []
+        for q in nodes:
+            d = manhattan(p, q)
+            if d == 1:
+                graph[p].append((q, SquareRootNumber(1, 1))) # 1 + sqrt(2)
+            elif d == 2:
+                graph[p].append((q, SquareRootNumber(2, 1))) # (1 + sqrt(2))*sqrt(2) = 2 + sqrt(2)
+            elif d == 3:
+                graph[p].append((q, SquareRootNumber(3, 1))) # 3 + sqrt(2)
 
-    if details:
-        print("From (0, 0) to ", list_points[0])
-        print("List of points in the path:", list_points)
-        print("(Weighted) length of the path:", path_dist)
-        print("(Weighted) dilation of the path:", path_dil, "==", str(s.N(path_dil, 4))+"...")
-        print("The path has (weighted) dilation at most 1+sqrt(2):", successful)
-        print()
+    # Dijkstra's algorithm
+    distances_from_origin = {}  # stores the graph distance between (0, 0) to all the other points
+    pq = PriorityQueue()
+    pq.put((SquareRootNumber(0, 0), (0, 0)))
 
-    if figure:
-        x_coord = [p[0] for p in list_points]
-        y_coord = [p[1] for p in list_points]
-        fig = plt.figure()
-        ax = fig.add_subplot(111, aspect='equal')
-        x_ticks = np.arange(-1, x+1, 1)
-        y_ticks = np.arange(-1, y+1, 1)
-        ax.set_xticks(x_ticks)
-        ax.set_yticks(y_ticks)
-        ax.grid(which='both')
-        plt.plot(x_coord, y_coord)
-        plt.draw()
-        plt.pause(0.001)
-        plt.clf()
-        plt.close()
+    while not pq.empty():
+        cur_dist, cur_point = pq.get()
+        
+        if not cur_point in distances_from_origin:    
+            distances_from_origin[cur_point] = cur_dist
+            for neigh, edge_length in graph[cur_point]:
+                if not neigh in distances_from_origin:
+                    pq.put((cur_dist + edge_length, neigh))
 
-    return successful
+    # Checking the shortest path property
+    for (x, y) in nodes:
+        p1 = (0, 0)
+        p2 = (x, y)
+        
+        square_dist_p1_p2 = SquareRootNumber(dist_squared(p1, p2), 0)   # we have to convert this integer explicitly to a SquareRootNumber
+        if not(distances_from_origin[p2]**2 <= (SquareRootNumber(1, 1)**2)*square_dist_p1_p2):
+            raise ValueError('The lemma is not verified for point', p2)
 
-
-if __name__ == "__main__":
-    for i in range(1, 64):
-        for j in range(0, i+1):
-            if i**2 + j**2 < 64**2:  # Cases that need to be checked
-                # It is discouraged to display a figure at every iteration
-                # considering the number of pairs (i, j)
-                if not can_be_reached((i, j), details=True, figure=False):
-                    raise("The proof did not work.")
+    print('The lemma is verified for all points (p, q) with -10 <= p, q <= 10')

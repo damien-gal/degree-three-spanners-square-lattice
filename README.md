@@ -20,8 +20,10 @@ pip install docopt
 
 ## Role of the different files
 
-The files lemma_2_4.py and lemma_3_8.py are used in the proofs of Lemmas 2.4 and 3.8, respectively. To launch them, simply type
+The files figure_2.py, proposition_2_1.py, lemma_2_4.py and lemma_3_8.py are used in the homonymous places in the article. To launch them, simply type
 ```bash
+python3 figure_2.py
+python3 proposition_2_1.py
 python3 lemma_2_4.py
 python3 lemma_3_8.py
 ```

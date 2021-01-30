@@ -1,4 +1,18 @@
+"""A NOTE ON OPTIMAL DEGREE-THREE SPANNERS OF THE SQUARE LATTICE - PROOF OF LEMMA 3.8
+
+Usage:
+    lemma_3_8.py
+    lemma_3_8.py (-h | --help)
+
+Options:
+    -h --help       Show this screen.
+
+Explanation:
+    This program performs the verification mentioned in the proof of Lemma 3.8.
+"""
+
 import sys
+from docopt import docopt
 
 import sympy as s
 import numpy as np
@@ -143,6 +157,8 @@ def init_GUI():
 # -----------------------------------------------------------------------------------------------------------------
 # MAIN PROGRAM
 if __name__ == '__main__':
+    arguments = docopt(__doc__)
+
     # SHOW ALL POSSIBLE PATHS AND FIND VALID PATHS AMONG THEM
     fig, ax, next_button = init_GUI()
 
